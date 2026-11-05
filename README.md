@@ -50,15 +50,17 @@ func TestNewToken(t *testing.T) {
 }
 ```
 
-A `random.Service` has five methods. `Bytes(n)` returns n random bytes, `Text()` a text of 26 characters, `IntN(n)` a number below n and `Float64()` a number from 0 to below 1. `Reader()` returns an `io.Reader` for libraries that take one, such as `ecdsa.GenerateKey`.
+A `random.Service` has five methods. `Bytes(n)` returns n random bytes, `Text()` a text of 26 characters, `IntN(n)` a number below n and `Float64()` a number from 0 to below 1. `Reader()` returns an `io.Reader` for libraries that read from one.
+
+Note that since Go 1.26, Go's own crypto packages, like `crypto/ecdsa` and `crypto/rsa`, ignore a reader they're given and always use `crypto/rand`. A mock's reader can't fix the keys they create. To fix those in a test, use [`testing/cryptotest.SetGlobalRandom`](https://pkg.go.dev/testing/cryptotest#SetGlobalRandom).
 
 ## The mock
 
 `randomtest.NewMock()` returns values from a stream with a fixed seed. A test then gets the same values in every run. `randomtest.NewMockFromSeed(seed)` takes another seed.
 
-To set a value, queue it. `QueueBytes`, `QueueText`, `QueueIntN` and `QueueFloat64` decide what the next call returns, and after that the mock returns values from its stream again. If a queued value doesn't fit the call, for example 3 queued bytes for `Bytes(4)`, the mock panics.
+To set a value, queue it. `QueueBytes`, `QueueText`, `QueueIntN` and `QueueFloat64` decide what the next call returns, and after that the mock returns values from its stream again. If queued bytes don't fit the call, for example 3 queued bytes for `Bytes(4)`, the mock panics. It also panics for a queued number that's out of range for `IntN` or `Float64`. `QueueText` takes any string.
 
-The mock also panics outside a test binary. That keeps predictable randomness out of production code. You can use the mock from several goroutines at once.
+The mock also panics outside a test binary, and when it wasn't created by `NewMock` or `NewMockFromSeed`. That keeps predictable randomness out of production code by mistake. It can't stop someone who builds a production binary as a test binary on purpose, for example with `go test -c`. You can use the mock from several goroutines at once.
 
 go-random has no dependencies outside Go's standard library.
 

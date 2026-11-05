@@ -16,6 +16,10 @@ const base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
 // Bytes reads n bytes from r.
 func Bytes(r io.Reader, n int) []byte {
+	if n < 0 {
+		panic(fmt.Sprintf("random: Bytes(%d) needs n of at least 0", n))
+	}
+
 	b := make([]byte, n)
 
 	_, err := io.ReadFull(r, b)

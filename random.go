@@ -9,10 +9,10 @@ import (
 	"github.com/The127/go-random/internal/derive"
 )
 
-// Service returns random values. Every method panics when the source of
-// randomness fails, like crypto/rand.Read does since Go 1.24.
+// Service returns random values. If crypto/rand fails, the program crashes,
+// as crypto/rand.Read does since Go 1.24, and recover can't catch it.
 type Service interface {
-	// Bytes returns n random bytes.
+	// Bytes returns n random bytes. It panics if n is negative.
 	Bytes(n int) []byte
 	// Text returns 26 characters of the base32 alphabet, A to Z and 2 to 7,
 	// which hold more than 128 bits of randomness.
@@ -22,8 +22,9 @@ type Service interface {
 	IntN(n int) int
 	// Float64 returns a uniformly random number from 0 to below 1.
 	Float64() float64
-	// Reader returns the source of the random bytes, for libraries that take
-	// an io.Reader, like ecdsa.GenerateKey.
+	// Reader returns the source of the random bytes, for libraries that read
+	// from an io.Reader. Since Go 1.26, Go's own crypto packages, like
+	// crypto/ecdsa, ignore a reader they're given and use crypto/rand.
 	Reader() io.Reader
 }
 
