@@ -289,3 +289,58 @@ func equal(a, b any) bool {
 
 	return a == b
 }
+
+func TestAZeroValueMockPanicsInsteadOfReturningValues(t *testing.T) {
+	t.Parallel()
+
+	for name, call := range map[string]func(*randomtest.Mock){
+		"QueueBytes":   func(m *randomtest.Mock) { m.QueueBytes([]byte{1}) },
+		"QueueText":    func(m *randomtest.Mock) { m.QueueText("abc") },
+		"QueueIntN":    func(m *randomtest.Mock) { m.QueueIntN(1) },
+		"QueueFloat64": func(m *randomtest.Mock) { m.QueueFloat64(0.5) },
+		"Bytes":        func(m *randomtest.Mock) { m.Bytes(1) },
+		"Text":         func(m *randomtest.Mock) { m.Text() },
+		"IntN":         func(m *randomtest.Mock) { m.IntN(2) },
+		"Float64":      func(m *randomtest.Mock) { m.Float64() },
+		"Reader":       func(m *randomtest.Mock) { _, _ = m.Reader().Read(make([]byte, 1)) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			// arrange
+			var mock randomtest.Mock
+
+			// act and assert
+			assertPanicsWith(t, "NewMock", func() { call(&mock) })
+		})
+	}
+}
+
+func TestBytesPanicsForANegativeN(t *testing.T) {
+	t.Parallel()
+
+	// arrange
+	mock := randomtest.NewMock()
+
+	// act and assert
+	assertPanicsWith(t, "Bytes(-1)", func() { mock.Bytes(-1) })
+}
+
+func assertPanicsWith(t *testing.T, text string, f func()) {
+	t.Helper()
+
+	defer func() {
+		got := recover()
+		if got == nil {
+			t.Error("the call didn't panic")
+
+			return
+		}
+
+		if message, _ := got.(string); !strings.Contains(message, text) {
+			t.Errorf("the call panicked with %v, want a message with %q", got, text)
+		}
+	}()
+
+	f()
+}

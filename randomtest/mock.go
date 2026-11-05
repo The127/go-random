@@ -33,16 +33,25 @@ func NewMock() *Mock {
 
 // NewMockFromSeed returns a Mock whose stream depends only on seed.
 func NewMockFromSeed(seed uint64) *Mock {
-	if !testing.Testing() {
-		panic("randomtest: a mock outside a test binary would make randomness predictable")
-	}
+	m := &Mock{stream: derive.NewStream(derive.Seed(seed))}
+	m.check()
 
-	return &Mock{stream: derive.NewStream(derive.Seed(seed))}
+	return m
+}
+
+// check panics unless NewMock or NewMockFromSeed created the mock in a test
+// binary.
+func (m *Mock) check() {
+	if m.stream == nil || !testing.Testing() {
+		panic("randomtest: a Mock only works in a test binary, created by NewMock or NewMockFromSeed")
+	}
 }
 
 // QueueBytes makes the next call to Bytes return b. That call must ask for
 // len(b) bytes. Reader reads queued bytes too.
 func (m *Mock) QueueBytes(b []byte) {
+	m.check()
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -52,6 +61,8 @@ func (m *Mock) QueueBytes(b []byte) {
 
 // QueueText makes the next call to Text return s.
 func (m *Mock) QueueText(s string) {
+	m.check()
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -61,6 +72,8 @@ func (m *Mock) QueueText(s string) {
 // QueueIntN makes the next call to IntN return v. That call's n must be
 // above v. It panics if v is negative.
 func (m *Mock) QueueIntN(v int) {
+	m.check()
+
 	if v < 0 {
 		panic(fmt.Sprintf("randomtest: QueueIntN(%d) needs a number of at least 0", v))
 	}
@@ -74,6 +87,8 @@ func (m *Mock) QueueIntN(v int) {
 // QueueFloat64 makes the next call to Float64 return v. It panics if v isn't
 // from 0 to below 1.
 func (m *Mock) QueueFloat64(v float64) {
+	m.check()
+
 	if v < 0 || v >= 1 {
 		panic(fmt.Sprintf("randomtest: QueueFloat64(%v) needs a number from 0 to below 1", v))
 	}
@@ -87,6 +102,8 @@ func (m *Mock) QueueFloat64(v float64) {
 // Bytes returns the queued bytes, or n bytes from the stream. It panics if
 // the queued bytes aren't n bytes.
 func (m *Mock) Bytes(n int) []byte {
+	m.check()
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -106,6 +123,8 @@ func (m *Mock) Bytes(n int) []byte {
 
 // Text returns the queued text, or text from the stream.
 func (m *Mock) Text() string {
+	m.check()
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -122,6 +141,8 @@ func (m *Mock) Text() string {
 // IntN returns the queued number, or a number from the stream. It panics if
 // n is below 1 or the queued number isn't below n.
 func (m *Mock) IntN(n int) int {
+	m.check()
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -141,6 +162,8 @@ func (m *Mock) IntN(n int) int {
 
 // Float64 returns the queued number, or a number from the stream.
 func (m *Mock) Float64() float64 {
+	m.check()
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -157,6 +180,8 @@ func (m *Mock) Float64() float64 {
 // Reader returns a reader that reads the queued bytes first and then the
 // stream.
 func (m *Mock) Reader() io.Reader {
+	m.check()
+
 	return reader{m}
 }
 
