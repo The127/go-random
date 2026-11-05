@@ -1,0 +1,7 @@
+version = 1
+SPDX-PackageName = "go-random"
+
+[[annotations]]
+path = "**"
+SPDX-FileCopyrightText = "Copyright 2026 The127"
+SPDX-License-Identifier = "MIT"

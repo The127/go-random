@@ -1,0 +1,21 @@
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - errorlint
+    - gosec
+    - revive
+    - wsl_v5
+  settings:
+    revive:
+      # Configuring a rule turns off revive's default rules otherwise.
+      enable-default-rules: true
+    wsl_v5:
+      enable:
+        - after-block
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports

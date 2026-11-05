@@ -1,0 +1,22 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: lint
+      run: just lint
+    - name: test
+      run: just test
+
+commit-msg:
+  jobs:
+    - name: conventional commit message
+      run: |
+        head -n1 {1} | grep -qE '^(feat|fix|chore|docs|refactor|test|perf|build|ci|revert)(\([a-z0-9-]+\))?!?: .+' || {
+          echo "The commit message must follow Conventional Commits, like 'fix: describe the change'."
+          exit 1
+        }
+    - name: sign-off
+      run: |
+        grep -qE '^Signed-off-by: .+ <.+@.+>' {1} || {
+          echo "The commit must be signed off. Commit with git commit -s."
+          exit 1
+        }

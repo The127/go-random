@@ -1,0 +1,48 @@
+name: DCO
+
+on:
+  pull_request:
+    # edited also fires when the base branch changes, which changes the range.
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  sign-off:
+    # Bots can't certify the Developer Certificate of Origin, and the release
+    # App's commits only raise the version and write the changelog.
+    if: >-
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'the127-release[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Fetches every branch. The range of commits below needs
+          # origin/<base branch>.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check that every commit is signed off
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # The event's base.sha can predate an update of the pull request's
+          # branch, and then the range would take in commits from the base.
+          # Assigned first, because a failing command inside the for line
+          # wouldn't stop the step.
+          commits=$(git rev-list --no-merges "origin/$BASE_REF..$HEAD_SHA" --)
+          failed=0
+          for commit in $commits; do
+            email=$(git show -s --format=%ae "$commit")
+            if ! git show -s --format=%B "$commit" | grep '^Signed-off-by: ' | grep -qF "<$email>"; then
+              echo "::error::Commit $commit has no Signed-off-by line for its author <$email>."
+              failed=1
+            fi
+          done
+          if [ "$failed" -ne 0 ]; then
+            echo "Commit with git commit -s to sign off."
+            exit 1
+          fi
+          echo "All commits are signed off."
